@@ -1,9 +1,21 @@
 import tkinter as tk
 import cv2
 import numpy as np
-
 import os
 from PIL import Image, ImageDraw, ImageGrab
+
+#Libreria para reconocer texto de imagenes
+import aspose.ocr as ocr
+
+#Librerias para mnist
+
+import torch
+import torch.nn as nn
+from torchvision import datasets, transforms
+
+
+mnist = datasets.MNIST(root='.', train=True, download=True)
+
 
 points_list = []
 
@@ -18,45 +30,67 @@ def clear_canvas():
     canvas.delete('all')
     points_list.clear()
 
-'''
+# create a button to save the canvas object
+def save_canvas():
+    canvas.postscript(file="drawing.eps", colormode="color")
+    img = Image.open("drawing.eps")
+    img.save("drawing.png", "png")
+
 def capture_drawing():
     if len(points_list) > 0:
+        x_coords, y_coords = zip(*points_list)
+        min_x, min_y = min(x_coords), min(y_coords)
+        max_x, max_y = max(x_coords), max(y_coords)
+        width = max_x - min_x
+        height = max_y - min_y
+        image = Image.new('RGB', (width, height), 'white')
+        draw = ImageDraw.Draw(image)
+        for i in range(len(points_list)-1):
+            x1, y1 = points_list[i]
+            x2, y2 = points_list[i+1]
+            draw.line((x1 - min_x, y1 - min_y, x2 - min_x, y2 - min_y), fill='black', width=2)  # Duplicar el grosor de las líneas
         filename = 'drawing.png'
-        image = ImageGrab.grab(bbox=(canvas.winfo_rootx(), canvas.winfo_rooty(), canvas.winfo_rootx() + canvas.winfo_width(), canvas.winfo_rooty() + canvas.winfo_height()))
+        image.save(os.path.join(os.getcwd(), filename), dpi=(300, 300))
+        #print('Drawing saved as', filename)
         image.show()
-	
-        image.save(os.path.join(os.getcwd(), filename))
-        
-        print('Drawing saved as', filename)
-'''
 
-def capture_drawing():
-    if len(points_list) > 0:
-        filename = 'drawing.png'
-        image = ImageGrab.grab(bbox=(canvas.winfo_rootx(), canvas.winfo_rooty(), canvas.winfo_rootx() + canvas.winfo_width(), canvas.winfo_rooty() + canvas.winfo_height()))
-        image.save(os.path.join(os.getcwd(), filename))
-        
-        # Convert image to grayscale
-        gray_image = image.convert('L')
-        
-        # Apply threshold to create binary image
-        threshold = 128
-        binary_image = gray_image.point(lambda x: 0 if x < threshold else 255, '1')
-        print(binary_image, 'hola ')
-        # Find contours of number
+def reconocer_texto():
+	'''
+	# Instantiate Aspose.OCR API
+	api = ocr.AsposeOcr()
+	# Add image to the recognition batch
+	input = ocr.OcrInput(ocr.InputType.SINGLE_IMAGE)
+	input.add("3.png")
+	# Recognize the image
+	result = api.recognize(input)
+	# Print recognition result
+	print(result[0].recognition_text)
 
-        '''
-        contours = cv2.findContours(np.array(binary_image), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-        if len(contours) > 0:
-            # Get bounding box of largest contour
-            largest_contour = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(largest_contour)
-            
-            # Crop image to bounding box
-            number_image = image.crop((x, y, x+w, y+h))
-            number_image.show()
-            number_image.save('number.png')
-        '''
+	cadena = result[0].recognition_text
+
+	numero = int(cadena.strip()[0])
+	print(numero)
+
+
+	# Obtener las imágenes de los números del 0 al 9
+	num_images = 10
+	images = []
+	labels = []
+
+	bandera = True
+	num_obtenido = 0
+	'''
+
+	for i in range(len(mnist)):
+	    if (mnist[i][1] < 10 and len(images) < num_images and bandera) :
+	        #images.append(mnist[i][0]) sirve para obtener la imagen
+	        #labels.append(mnist[i][1]) sirve para obtener el nombre en entero
+	        if mnist[i][1] == numero:
+	           num_obtenido = mnist[i][1]
+	           bandera = False
+
+	print('Es el numero: ',num_obtenido)
+
 
 window = tk.Tk()
 window.title('Canvas')
@@ -83,7 +117,9 @@ canvas.bind('<B1-Motion>', draw_on_canvas)
 clear_button = tk.Button(window, text="Clear", command=clear_canvas)
 clear_button.place(relx=0.75, rely=1.0, anchor='s')
 
+#capture_button = tk.Button(window, text="Capture", command=reconocer_texto)
 capture_button = tk.Button(window, text="Capture", command=capture_drawing)
 capture_button.place(relx=0.25, rely=1.0, anchor='s')
+
 
 window.mainloop()
