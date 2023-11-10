@@ -43,17 +43,18 @@ def capture_drawing():
         max_x, max_y = max(x_coords), max(y_coords)
         width = max_x - min_x
         height = max_y - min_y
-        image = Image.new('L', (width, height), 'white') 
+        image = Image.new('L', (width+20, height+20), 'white')  
         draw = ImageDraw.Draw(image)
         for i in range(len(points_list)-1):
             x1, y1 = points_list[i]
             x2, y2 = points_list[i+1]
-            draw.line((x1 - min_x, y1 - min_y, x2 - min_x, y2 - min_y), fill='black', width=10)  # Draw thicker white lines
-        filename = 'drawing.png'
-        #image = image.resize((28, 28))
+            draw.line((x1 - min_x+10, y1 - min_y+10, x2 - min_x+10, y2 - min_y+10), fill='black', width=10)  
+        filename = 'drawing.jpg'
         image.save(os.path.join(os.getcwd(), filename), dpi=(300, 300))
         #print('Drawing saved as', filename)
         image.show()
+
+
 def reconocer_texto():
 
 	for i in range(len(mnist)):
