@@ -43,43 +43,18 @@ def capture_drawing():
         max_x, max_y = max(x_coords), max(y_coords)
         width = max_x - min_x
         height = max_y - min_y
-        image = Image.new('RGB', (width, height), 'white')
+        image = Image.new('L', (width, height), 'white') 
         draw = ImageDraw.Draw(image)
         for i in range(len(points_list)-1):
             x1, y1 = points_list[i]
             x2, y2 = points_list[i+1]
-            draw.line((x1 - min_x, y1 - min_y, x2 - min_x, y2 - min_y), fill='black', width=2)  # Duplicar el grosor de las líneas
+            draw.line((x1 - min_x, y1 - min_y, x2 - min_x, y2 - min_y), fill='black', width=10)  # Draw thicker white lines
         filename = 'drawing.png'
+        #image = image.resize((28, 28))
         image.save(os.path.join(os.getcwd(), filename), dpi=(300, 300))
         #print('Drawing saved as', filename)
         image.show()
-
 def reconocer_texto():
-	'''
-	# Instantiate Aspose.OCR API
-	api = ocr.AsposeOcr()
-	# Add image to the recognition batch
-	input = ocr.OcrInput(ocr.InputType.SINGLE_IMAGE)
-	input.add("3.png")
-	# Recognize the image
-	result = api.recognize(input)
-	# Print recognition result
-	print(result[0].recognition_text)
-
-	cadena = result[0].recognition_text
-
-	numero = int(cadena.strip()[0])
-	print(numero)
-
-
-	# Obtener las imágenes de los números del 0 al 9
-	num_images = 10
-	images = []
-	labels = []
-
-	bandera = True
-	num_obtenido = 0
-	'''
 
 	for i in range(len(mnist)):
 	    if (mnist[i][1] < 10 and len(images) < num_images and bandera) :
