@@ -17,6 +17,39 @@ import torch
 import torch.nn as nn
 from torchvision import datasets, transforms
 
+import torch.nn.functional as F  # for the activation function
+
+#Otro modelo
+class LeNet(nn.Module):
+    def __init__(self):
+        super(LeNet, self).__init__()
+        # 1 input image channel (black & white), 6 output channels, 3x3 square convolution
+        # kernel
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        # an affine operation: y = Wx + b
+        self.fc1 = nn.Linear(256, 120)  # 6*6 from image dimension
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        # Max pooling over a (2, 2) window
+        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+        # If the size is a square you can only specify a single number
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = x.view(-1, self.num_flat_features(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+
 #Neurona para realizar el entrenamiento respectivo
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -35,43 +68,22 @@ class NeuralNetwork(nn.Module):
         logits = self.linear_relu_stack(x)
         return logits
 
-if not os.path.isfile('model.pth'):
-    # Descargar el conjunto de datos y entrenar el modelo
-	train_dataset = datasets.MNIST(root='data', train=True, transform=transforms.ToTensor(), download=True)
-	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+if not os.path.isfile('lenet_model.pth'):
 
-	model = NeuralNetwork().to(device)
+	num_epochs = 20
+	model = LeNet()
+	criterion = nn.CrossEntropyLoss()
+	optimizer = optim.SGD(model.parameters(), lr=0.01)
 
-	loss_fn = nn.CrossEntropyLoss()
-	optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
-
-	def train(dataloader, model, loss_fn, optimizer):
-	    size = len(dataloader.dataset)
-	    model.train()
-	    for batch, (X, y) in enumerate(dataloader):
-	        X, y = X.to(device), y.to(device)
-
-	        # Compute prediction error
-	        pred = model(X)
-	        loss = loss_fn(pred, y)
-
-	        # Backpropagation
+	for epoch in range(num_epochs):
+	    for batch_idx, (data, target) in enumerate(train_loader):
 	        optimizer.zero_grad()
+	        output = model(data)
+	        loss = criterion(output, target)
 	        loss.backward()
 	        optimizer.step()
 
-	        if batch % 100 == 0:
-	            loss, current = loss.item(), batch * len(X)
-	            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-	epochs = 16
-	for t in range(epochs):
-	    print(f"Epoch {t+1}\n-------------------------------")
-	    train(train_loader, model, loss_fn, optimizer)
-	print("Done!")
-
-	model.state_dict()
-	torch.save(model.state_dict(), "model.pth")
+	torch.save(model.state_dict(), 'lenet_model.pth')
 
 points_list = []
 
@@ -104,7 +116,6 @@ def capture_drawing():
 
         verificar_modelo(filename)
 
-
 def select_image():
     file_path = filedialog.askopenfilename()
     verificar_modelo(file_path)
@@ -123,14 +134,17 @@ def verificar_modelo(file):
 	img_tensor = img_tensor.unsqueeze(0)
 
 	# Load the model
-	model = NeuralNetwork()
-	model.load_state_dict(torch.load("model.pth"))
+	#model = NeuralNetwork()
+	model = LeNet()
+	model.load_state_dict(torch.load("lenet_model.pth"))
 
 	# Evaluate the model
 	model.eval()
 	with torch.no_grad():
 	    output = model(img_tensor)
+	    print(output)
 	    _, predicted = torch.max(output, 1)
+	    print(predicted)
 	messagebox.showinfo("Número ingresado", f"El número ingresado es: {predicted.item()}")
 
 window = tk.Tk()
